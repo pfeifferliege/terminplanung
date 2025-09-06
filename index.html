@@ -28,7 +28,6 @@
     }
     .container { max-width: 1200px; margin: auto; }
     .app-title { font-size: 1.6rem; margin-bottom: 1rem; }
-    .badge { font-size: .8rem; background: var(--primary); color: #fff; padding: 2px 6px; border-radius: 8px; }
     .grid { display: grid; gap: 1rem; }
     .cols-2 { grid-template-columns: 1fr 1fr; }
     @media(max-width:800px){ .cols-2 { grid-template-columns: 1fr; } }
@@ -161,6 +160,16 @@
               </div>
             </div>
 
+            <!-- Begleitung (immer sichtbar) -->
+            <div>
+              <label for="escort">Begleitung</label>
+              <select id="escort">
+                <option value="">Bitte auswählen</option>
+                <option value="Mit Begleitung">Mit Begleitung</option>
+                <option value="Ohne Begleitung">Ohne Begleitung</option>
+              </select>
+            </div>
+
             <!-- Startadresse -->
             <div class="hr"></div>
             <div><span class="pill"><span class="dot"></span> Startadresse</span></div>
@@ -178,7 +187,7 @@
             </div>
 
             <div class="actions">
-              <button type="submit" class="btn-primary">?? Termin speichern</button>
+              <button type="submit" class="btn-primary">✅ Termin speichern</button>
               <button type="button" class="btn-ghost" onclick="Planner.resetForm()">Formular zurücksetzen</button>
             </div>
           </form>
@@ -192,7 +201,7 @@
           <div class="list" id="aptList"></div>
           <div class="footer">
             <span class="text-sm" id="counter" style="color:var(--text-dim)">0 Termine</span>
-            <button class="btn-danger right" onclick="Planner.clearAll()">??? Alle Termine löschen</button>
+            <button class="btn-danger right" onclick="Planner.clearAll()">🗑️ Alle Termine löschen</button>
           </div>
         </div>
       </section>
@@ -252,6 +261,7 @@
           chairOwner: $('#chairOwner')?.value,
           payment: $('#payment').value,
           tsStatus: $('#tsStatus')?.value,
+          escort: $('#escort')?.value,
           startAddr: $('#startAddr').value,
           zielAddr: $('#zielAddr').value,
           done:false
@@ -280,6 +290,7 @@
                 <div>Terminart: ${this.escape(apt.tripType)}</div>
                 <div>Beförderung: ${this.escape(apt.mobility)} ${apt.stairs? "(Treppen: "+this.escape(apt.stairs)+")":""} ${apt.chairOwner? "(Rollstuhl: "+this.escape(apt.chairOwner)+")":""}</div>
                 <div>Zahlung: ${this.escape(apt.payment)} ${apt.tsStatus? "(Zuzahlungsstatus: "+this.escape(apt.tsStatus)+")":""}</div>
+                <div>Begleitung: ${this.escape(apt.escort)}</div>
                 <div>Startadresse: ${this.escape(apt.startAddr)}</div>
                 <div>Zieladresse: ${this.escape(apt.zielAddr)}</div>
               </div>
@@ -333,6 +344,3 @@
   </script>
 </body>
 </html>
-
-
-
