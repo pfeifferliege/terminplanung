@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Terminplaner – Freundlich & Mobil</title>
+  <title>Terminplaner â€“ Freundlich & Mobil</title>
   <style>
     :root {
       --bg: #f9f9fb;
@@ -73,7 +73,7 @@
 </head>
 <body>
   <div class="container">
-    <h1 class="app-title">??? Terminplaner <span class="badge">offline · speichert lokal</span></h1>
+    <h1 class="app-title">Terminplaner</h1>
 
     <div class="grid cols-2">
       <!-- LINKS: Formular -->
@@ -83,7 +83,7 @@
           <form id="aptForm" onsubmit="Planner.saveAppointment(event)">
             <div>
               <label for="name">Name</label>
-              <input id="name" list="nameList" placeholder="Name eingeben oder wählen" required />
+              <input id="name" list="nameList" placeholder="Name eingeben oder wÃ¤hlen" required />
               <datalist id="nameList"></datalist>
             </div>
 
@@ -100,7 +100,7 @@
             <div>
               <label for="tripType">Terminart</label>
               <select id="tripType" required>
-                <option value="">Bitte auswählen</option>
+                <option value="">Bitte auswÃ¤hlen</option>
                 <option value="Ambulanter Termin">Ambulanter Termin</option>
                 <option value="Einweisung">Einweisung</option>
                 <option value="Konsilfahrt">Konsilfahrt</option>
@@ -109,9 +109,9 @@
             </div>
 
             <div>
-              <label for="mobility">Beförderungsart</label>
+              <label for="mobility">BefÃ¶rderungsart</label>
               <select id="mobility" onchange="Planner.onMobilityChange()" required>
-                <option value="">Bitte auswählen</option>
+                <option value="">Bitte auswÃ¤hlen</option>
                 <option>Rollstuhl</option>
                 <option>Pflegerollstuhl</option>
                 <option>Breiter Rollstuhl</option>
@@ -130,7 +130,7 @@
               <div>
                 <label for="chairOwner">Rollstuhl</label>
                 <select id="chairOwner">
-                  <option value="">Bitte auswählen</option>
+                  <option value="">Bitte auswÃ¤hlen</option>
                   <option value="Eigener Rollstuhl">Eigener Rollstuhl</option>
                   <option value="Firmenrollstuhl">Firmenrollstuhl</option>
                 </select>
@@ -140,7 +140,7 @@
             <div>
               <label for="payment">Zahlungsart</label>
               <select id="payment" onchange="Planner.onPaymentChange()" required>
-                <option value="">Bitte auswählen</option>
+                <option value="">Bitte auswÃ¤hlen</option>
                 <option>Transportschein</option>
                 <option>Bar</option>
                 <option>EC</option>
@@ -153,7 +153,7 @@
               <div>
                 <label for="tsStatus">Zuzahlungsstatus</label>
                 <select id="tsStatus">
-                  <option value="">Bitte auswählen</option>
+                  <option value="">Bitte auswÃ¤hlen</option>
                   <option value="Befreit">Befreit</option>
                   <option value="Nicht befreit (EA auf Rechnung)">Nicht befreit (EA auf Rechnung)</option>
                 </select>
@@ -165,7 +165,7 @@
             <div><span class="pill"><span class="dot"></span> Startadresse</span></div>
             <div>
               <label for="startAddr">Adresse</label>
-              <input id="startAddr" type="text" placeholder="Straße Hausnr., PLZ Ort" />
+              <input id="startAddr" type="text" placeholder="StraÃŸe Hausnr., PLZ Ort" />
             </div>
 
             <!-- Zieladresse -->
@@ -173,12 +173,12 @@
             <div><span class="pill"><span class="dot"></span> Zieladresse</span></div>
             <div>
               <label for="zielAddr">Adresse</label>
-              <input id="zielAddr" type="text" placeholder="Straße Hausnr., PLZ Ort" />
+              <input id="zielAddr" type="text" placeholder="StraÃŸe Hausnr., PLZ Ort" />
             </div>
 
             <div class="actions">
               <button type="submit" class="btn-primary">?? Termin speichern</button>
-              <button type="button" class="btn-ghost" onclick="Planner.resetForm()">Formular zurücksetzen</button>
+              <button type="button" class="btn-ghost" onclick="Planner.resetForm()">Formular zurÃ¼cksetzen</button>
             </div>
           </form>
         </div>
@@ -191,7 +191,7 @@
           <div class="list" id="aptList"></div>
           <div class="footer">
             <span class="text-sm" id="counter" style="color:var(--text-dim)">0 Termine</span>
-            <button class="btn-danger right" onclick="Planner.clearAll()">??? Alle Termine löschen</button>
+            <button class="btn-danger right" onclick="Planner.clearAll()">??? Alle Termine lÃ¶schen</button>
           </div>
         </div>
       </section>
@@ -256,7 +256,7 @@
           done:false
         };
 
-        // Neue Termine am Anfang einfügen
+        // Neue Termine am Anfang einfÃ¼gen
         this.state.apts.unshift(apt);
         this.save(STORAGE.apts, this.state.apts);
         this.renderList();
@@ -273,18 +273,18 @@
             return `<div class="apt ${apt.done? 'apt-done':''}" data-id="${apt.id}">
               <div class="apt-head">
                 <span class="apt-title">${this.escape(apt.name)}</span>
-                <span class="apt-date">${dateFormatted}${apt.time? " · "+this.escape(apt.time):""}</span>
+                <span class="apt-date">${dateFormatted}${apt.time? " Â· "+this.escape(apt.time):""}</span>
               </div>
               <div class="apt-meta">
                 <div>Terminart: ${this.escape(apt.tripType)}</div>
-                <div>Beförderung: ${this.escape(apt.mobility)} ${apt.stairs? "(Treppen: "+this.escape(apt.stairs)+")":""} ${apt.chairOwner? "(Rollstuhl: "+this.escape(apt.chairOwner)+")":""}</div>
+                <div>BefÃ¶rderung: ${this.escape(apt.mobility)} ${apt.stairs? "(Treppen: "+this.escape(apt.stairs)+")":""} ${apt.chairOwner? "(Rollstuhl: "+this.escape(apt.chairOwner)+")":""}</div>
                 <div>Zahlung: ${this.escape(apt.payment)} ${apt.tsStatus? "(Zuzahlungsstatus: "+this.escape(apt.tsStatus)+")":""}</div>
                 <div>Startadresse: ${this.escape(apt.startAddr)}</div>
                 <div>Zieladresse: ${this.escape(apt.zielAddr)}</div>
               </div>
               <div class="actions">
                 <label><input type="checkbox" onchange="Planner.toggleDone(${apt.id})" ${apt.done? 'checked':''}/> erledigt</label>
-                <button class="btn-small btn-danger" onclick="Planner.deleteApt(${apt.id})">Löschen</button>
+                <button class="btn-small btn-danger" onclick="Planner.deleteApt(${apt.id})">LÃ¶schen</button>
               </div>
             </div>`
           }).join('');
@@ -305,7 +305,7 @@
       },
 
       deleteApt(id){
-        if(confirm('Diesen Termin wirklich löschen?')){
+        if(confirm('Diesen Termin wirklich lÃ¶schen?')){
           this.state.apts = this.state.apts.filter(a=>a.id!==id);
           this.save(STORAGE.apts,this.state.apts);
           this.renderList();
@@ -313,7 +313,7 @@
       },
 
       clearAll(){
-        if(confirm('Alle Termine unwiderruflich löschen?')){
+        if(confirm('Alle Termine unwiderruflich lÃ¶schen?')){
           this.state.apts=[];
           this.save(STORAGE.apts,this.state.apts);
           this.renderList();
@@ -332,3 +332,4 @@
   </script>
 </body>
 </html>
+
