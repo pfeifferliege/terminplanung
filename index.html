@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Terminplaner – Freundlich & Mobil</title>
+  <style>
+    :root {
+      --bg: #f9f9fb;
+      --card: #ffffff;
+      --primary: #4a90e2;
+      --primary-hover: #357ab8;
+      --danger: #e74c3c;
+      --danger-hover: #c0392b;
+      --text: #333;
+      --text-dim: #666;
+      --border: #ddd;
+      --radius: 12px;
+      --shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    body {
+      font-family: system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 1rem;
+    }
+    .container { max-width: 1200px; margin: auto; }
+    .app-title { font-size: 1.6rem; margin-bottom: 1rem; }
+    .badge { font-size: .8rem; background: var(--primary); color: #fff; padding: 2px 6px; border-radius: 8px; }
+    .grid { display: grid; gap: 1rem; }
+    .cols-2 { grid-template-columns: 1fr 1fr; }
+    @media(max-width:800px){ .cols-2 { grid-template-columns: 1fr; } }
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 1rem;
+      display:flex; flex-direction:column;
+    }
+    .hd { font-weight:bold; margin-bottom:.5rem; }
+    .bd { flex:1; }
+    form div { margin-bottom:.6rem; }
+    label { display:block; font-size:.85rem; margin-bottom:2px; color: var(--text-dim); }
+    input, select {
+      width:100%; padding:.4rem .5rem;
+      border:1px solid var(--border); border-radius:6px;
+      font-size:1rem;
+    }
+    input:focus, select:focus { border-color: var(--primary); outline:none; }
+    .actions { display:flex; gap:.5rem; flex-wrap:wrap; }
+    button {
+      padding:.5rem .8rem; border:none; border-radius:6px;
+      cursor:pointer; font-size:.9rem;
+    }
+    .btn-primary { background:var(--primary); color:#fff; }
+    .btn-primary:hover { background:var(--primary-hover); }
+    .btn-ghost { background:#eee; }
+    .btn-danger { background:var(--danger); color:#fff; }
+    .btn-danger:hover { background:var(--danger-hover); }
+    .btn-small { font-size:.8rem; padding:.3rem .5rem; }
+    .pill { font-size:.9rem; font-weight:bold; color:var(--primary); }
+    .dot { display:inline-block; width:10px; height:10px; border-radius:50%; background:var(--primary); margin-right:4px; }
+    .hr { border-top:1px solid var(--border); margin:.7rem 0; }
+    .list .apt { border-bottom:1px solid var(--border); padding:.5rem 0; }
+    .apt-head { display:flex; justify-content:space-between; font-weight:bold; flex-wrap:wrap; gap:.3rem; }
+    .apt-meta { font-size:.85rem; color:var(--text-dim); margin:.2rem 0; }
+    .apt-done .apt-title { text-decoration: line-through; color:var(--text-dim); }
+    .footer { margin-top:1rem; display:flex; justify-content:space-between; align-items:center; }
+    .hidden { display:none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 class="app-title">??? Terminplaner <span class="badge">offline · speichert lokal</span></h1>
+
+    <div class="grid cols-2">
+      <!-- LINKS: Formular -->
+      <section class="card" aria-labelledby="form-title">
+        <div class="hd" id="form-title">Neuen Termin anlegen</div>
+        <div class="bd">
+          <form id="aptForm" onsubmit="Planner.saveAppointment(event)">
+            <div>
+              <label for="name">Name</label>
+              <input id="name" list="nameList" placeholder="Name eingeben oder wählen" required />
+              <datalist id="nameList"></datalist>
+            </div>
+
+            <div>
+              <label for="date">Termin</label>
+              <input id="date" type="date" required />
+            </div>
+
+            <div>
+              <label for="time">Uhrzeit</label>
+              <input id="time" type="time" required />
+            </div>
+
+            <div>
+              <label for="tripType">Terminart</label>
+              <select id="tripType" required>
+                <option value="">Bitte auswählen</option>
+                <option value="Ambulanter Termin">Ambulanter Termin</option>
+                <option value="Einweisung">Einweisung</option>
+                <option value="Konsilfahrt">Konsilfahrt</option>
+                <option value="Termin mit Wartezeit">Termin mit Wartezeit</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="mobility">Beförderungsart</label>
+              <select id="mobility" onchange="Planner.onMobilityChange()" required>
+                <option value="">Bitte auswählen</option>
+                <option>Rollstuhl</option>
+                <option>Pflegerollstuhl</option>
+                <option>Breiter Rollstuhl</option>
+                <option>Tragestuhl</option>
+                <option>Liegend</option>
+                <option>Rollator</option>
+              </select>
+            </div>
+
+            <!-- Nur bei Tragestuhl -->
+            <div id="stairsExtra" class="hidden">
+              <div>
+                <label for="stairs">Anzahl Treppen</label>
+                <input id="stairs" type="number" min="0" placeholder="0" />
+              </div>
+              <div>
+                <label for="chairOwner">Rollstuhl</label>
+                <select id="chairOwner">
+                  <option value="">Bitte auswählen</option>
+                  <option value="Eigener Rollstuhl">Eigener Rollstuhl</option>
+                  <option value="Firmenrollstuhl">Firmenrollstuhl</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label for="payment">Zahlungsart</label>
+              <select id="payment" onchange="Planner.onPaymentChange()" required>
+                <option value="">Bitte auswählen</option>
+                <option>Transportschein</option>
+                <option>Bar</option>
+                <option>EC</option>
+                <option>Rechnung</option>
+              </select>
+            </div>
+
+            <!-- Nur bei Transportschein -->
+            <div id="tsExtra" class="hidden">
+              <div>
+                <label for="tsStatus">Zuzahlungsstatus</label>
+                <select id="tsStatus">
+                  <option value="">Bitte auswählen</option>
+                  <option value="Befreit">Befreit</option>
+                  <option value="Nicht befreit (EA auf Rechnung)">Nicht befreit (EA auf Rechnung)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Startadresse -->
+            <div class="hr"></div>
+            <div><span class="pill"><span class="dot"></span> Startadresse</span></div>
+            <div>
+              <label for="startAddr">Adresse</label>
+              <input id="startAddr" type="text" placeholder="Straße Hausnr., PLZ Ort" />
+            </div>
+
+            <!-- Zieladresse -->
+            <div class="hr"></div>
+            <div><span class="pill"><span class="dot"></span> Zieladresse</span></div>
+            <div>
+              <label for="zielAddr">Adresse</label>
+              <input id="zielAddr" type="text" placeholder="Straße Hausnr., PLZ Ort" />
+            </div>
+
+            <div class="actions">
+              <button type="submit" class="btn-primary">?? Termin speichern</button>
+              <button type="button" class="btn-ghost" onclick="Planner.resetForm()">Formular zurücksetzen</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- RECHTS: Liste -->
+      <section class="card" aria-labelledby="list-title">
+        <div class="hd" id="list-title">Terminliste</div>
+        <div class="bd">
+          <div class="list" id="aptList"></div>
+          <div class="footer">
+            <span class="text-sm" id="counter" style="color:var(--text-dim)">0 Termine</span>
+            <button class="btn-danger right" onclick="Planner.clearAll()">??? Alle Termine löschen</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE = {
+      names: 'planner_names_v1',
+      apts: 'planner_apts_v1'
+    };
+    const $ = (sel, root=document) => root.querySelector(sel);
+
+    const Planner = {
+      state: { names: [], apts: [] },
+
+      init(){
+        this.state.names = this.load(STORAGE.names, []);
+        this.state.apts = this.load(STORAGE.apts, []);
+        this.refreshNameUI();
+        this.renderList();
+        const today = new Date();
+        $('#date').value = today.toISOString().slice(0,10);
+      },
+
+      load(key, fallback){ try { return JSON.parse(localStorage.getItem(key)) ?? fallback } catch { return fallback } },
+      save(key, value){ localStorage.setItem(key, JSON.stringify(value)); },
+
+      upsertName(name){
+        const n = name.trim();
+        if(!n) return;
+        if(!this.state.names.includes(n)){
+          this.state.names.push(n);
+          this.state.names.sort((a,b)=> a.localeCompare(b,'de',{sensitivity:'base'}));
+          this.save(STORAGE.names, this.state.names);
+          this.refreshNameUI();
+        }
+      },
+      refreshNameUI(){
+        const dl = $('#nameList');
+        dl.innerHTML = this.state.names.map(n=>`<option value="${this.escape(n)}"></option>`).join('');
+      },
+
+      saveAppointment(e){
+        e.preventDefault();
+        const name = $('#name').value.trim();
+        this.upsertName(name);
+
+        const apt = {
+          id: Date.now(),
+          name,
+          date: $('#date').value,
+          time: $('#time').value,
+          tripType: $('#tripType').value,
+          mobility: $('#mobility').value,
+          stairs: $('#stairs')?.value,
+          chairOwner: $('#chairOwner')?.value,
+          payment: $('#payment').value,
+          tsStatus: $('#tsStatus')?.value,
+          startAddr: $('#startAddr').value,
+          zielAddr: $('#zielAddr').value,
+          done:false
+        };
+
+        // Neue Termine am Anfang einfügen
+        this.state.apts.unshift(apt);
+        this.save(STORAGE.apts, this.state.apts);
+        this.renderList();
+        this.resetForm();
+      },
+
+      renderList(){
+        const list = $('#aptList');
+        if(this.state.apts.length===0){
+          list.innerHTML = `<div class="empty-note">Noch keine Termine eingetragen.</div>`;
+        } else {
+          list.innerHTML = this.state.apts.map(apt=>{
+            const dateFormatted = this.formatDate(apt.date);
+            return `<div class="apt ${apt.done? 'apt-done':''}" data-id="${apt.id}">
+              <div class="apt-head">
+                <span class="apt-title">${this.escape(apt.name)}</span>
+                <span class="apt-date">${dateFormatted}${apt.time? " · "+this.escape(apt.time):""}</span>
+              </div>
+              <div class="apt-meta">
+                <div>Terminart: ${this.escape(apt.tripType)}</div>
+                <div>Beförderung: ${this.escape(apt.mobility)} ${apt.stairs? "(Treppen: "+this.escape(apt.stairs)+")":""} ${apt.chairOwner? "(Rollstuhl: "+this.escape(apt.chairOwner)+")":""}</div>
+                <div>Zahlung: ${this.escape(apt.payment)} ${apt.tsStatus? "(Zuzahlungsstatus: "+this.escape(apt.tsStatus)+")":""}</div>
+                <div>Startadresse: ${this.escape(apt.startAddr)}</div>
+                <div>Zieladresse: ${this.escape(apt.zielAddr)}</div>
+              </div>
+              <div class="actions">
+                <label><input type="checkbox" onchange="Planner.toggleDone(${apt.id})" ${apt.done? 'checked':''}/> erledigt</label>
+                <button class="btn-small btn-danger" onclick="Planner.deleteApt(${apt.id})">Löschen</button>
+              </div>
+            </div>`
+          }).join('');
+        }
+        $('#counter').textContent = `${this.state.apts.length} Termin(e)`;
+      },
+
+      formatDate(dateStr){
+        if(!dateStr) return "";
+        const d = new Date(dateStr);
+        if(isNaN(d)) return this.escape(dateStr);
+        return d.toLocaleDateString('de-DE',{day:'2-digit', month:'2-digit', year:'numeric'});
+      },
+
+      toggleDone(id){
+        const apt = this.state.apts.find(a=>a.id===id);
+        if(apt){ apt.done=!apt.done; this.save(STORAGE.apts,this.state.apts); this.renderList(); }
+      },
+
+      deleteApt(id){
+        if(confirm('Diesen Termin wirklich löschen?')){
+          this.state.apts = this.state.apts.filter(a=>a.id!==id);
+          this.save(STORAGE.apts,this.state.apts);
+          this.renderList();
+        }
+      },
+
+      clearAll(){
+        if(confirm('Alle Termine unwiderruflich löschen?')){
+          this.state.apts=[];
+          this.save(STORAGE.apts,this.state.apts);
+          this.renderList();
+        }
+      },
+
+      resetForm(){ $('#aptForm').reset(); $('#stairsExtra').classList.add('hidden'); $('#tsExtra').classList.add('hidden'); },
+
+      onMobilityChange(){ $('#stairsExtra').classList.toggle('hidden',$('#mobility').value!=='Tragestuhl'); },
+      onPaymentChange(){ $('#tsExtra').classList.toggle('hidden',$('#payment').value!=='Transportschein'); },
+
+      escape(s){ return (s||"").toString().replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m])) }
+    };
+
+    window.addEventListener('DOMContentLoaded', ()=> Planner.init());
+  </script>
+</body>
+</html>
