@@ -12,6 +12,7 @@
       --primary-hover: #357ab8;
       --danger: #e74c3c;
       --danger-hover: #c0392b;
+      --whatsapp: #25D366;
       --text: #333;
       --text-dim: #666;
       --border: #ddd;
@@ -59,13 +60,13 @@
     .btn-danger { background:var(--danger); color:#fff; }
     .btn-danger:hover { background:var(--danger-hover); }
     .btn-small { font-size:.8rem; padding:.3rem .5rem; }
+    .btn-whatsapp { background:var(--whatsapp); color:#fff; }
     .pill { font-size:.9rem; font-weight:bold; color:var(--primary); }
     .dot { display:inline-block; width:10px; height:10px; border-radius:50%; background:var(--primary); margin-right:4px; }
     .hr { border-top:1px solid var(--border); margin:.7rem 0; }
     .list .apt { border-bottom:1px solid var(--border); padding:.5rem 0; }
     .apt-head { display:flex; justify-content:space-between; font-weight:bold; flex-wrap:wrap; gap:.3rem; }
     .apt-meta { font-size:.85rem; color:var(--text-dim); margin:.2rem 0; }
-    .apt-done .apt-title { text-decoration: line-through; color:var(--text-dim); }
     .footer { margin-top:1rem; display:flex; justify-content:space-between; align-items:center; }
     .hidden { display:none; }
   </style>
@@ -80,6 +81,7 @@
         <div class="hd" id="form-title">Neuen Termin anlegen</div>
         <div class="bd">
           <form id="aptForm" onsubmit="Planner.saveAppointment(event)">
+            <input type="hidden" id="editId" value="">
             <div>
               <label for="name">Name</label>
               <input id="name" list="nameList" placeholder="Name eingeben oder wählen" required />
@@ -170,7 +172,7 @@
               </select>
             </div>
 
-            <!-- NEU: Anmerkungen -->
+            <!-- Anmerkungen -->
             <div>
               <label for="notes">Anmerkungen</label>
               <textarea id="notes" rows="3" placeholder="z. B. besondere Hinweise zur Übernahme, Klingel, Mobilnummer, etc."></textarea>
@@ -193,7 +195,7 @@
             </div>
 
             <div class="actions">
-              <button type="submit" class="btn-primary">✅ Termin speichern</button>
+              <button type="submit" class="btn-primary">💾 Termin speichern</button>
               <button type="button" class="btn-ghost" onclick="Planner.resetForm()">Formular zurücksetzen</button>
             </div>
           </form>
@@ -256,8 +258,9 @@
         const name = $('#name').value.trim();
         this.upsertName(name);
 
-        const apt = {
-          id: Date.now(),
+        const editId = $('#editId').value;
+        const aptData = {
+          id: editId ? Number(editId) : Date.now(),
           name,
           date: $('#date').value,
           time: $('#time').value,
@@ -270,12 +273,18 @@
           escort: $('#escort')?.value,
           notes: $('#notes')?.value || '',
           startAddr: $('#startAddr').value,
-          zielAddr: $('#zielAddr').value,
-          done:false
+          zielAddr: $('#zielAddr').value
         };
 
-        // Neue Termine am Anfang einfügen
-        this.state.apts.unshift(apt);
+        if(editId){
+          // Update bestehenden Termin
+          const idx = this.state.apts.findIndex(a=>a.id===Number(editId));
+          if(idx>-1) this.state.apts[idx] = aptData;
+        } else {
+          // Neu anlegen
+          this.state.apts.unshift(aptData);
+        }
+
         this.save(STORAGE.apts, this.state.apts);
         this.renderList();
         this.resetForm();
@@ -288,7 +297,7 @@
         } else {
           list.innerHTML = this.state.apts.map(apt=>{
             const dateFormatted = this.formatDate(apt.date);
-            return `<div class="apt ${apt.done? 'apt-done':''}" data-id="${apt.id}">
+            return `<div class="apt" data-id="${apt.id}">
               <div class="apt-head">
                 <span class="apt-title">${this.escape(apt.name)}</span>
                 <span class="apt-date">${dateFormatted}${apt.time? " · "+this.escape(apt.time):""}</span>
@@ -303,9 +312,9 @@
                 <div>Zieladresse: ${this.escape(apt.zielAddr)}</div>
               </div>
               <div class="actions">
-                <label><input type="checkbox" onchange="Planner.toggleDone(${apt.id})" ${apt.done? 'checked':''}/> erledigt</label>
+                <button class="btn-small btn-primary" onclick="Planner.editApt(${apt.id})">✏️ Bearbeiten</button>
+                <button class="btn-small btn-whatsapp" onclick="Planner.sendWhatsApp(${apt.id})">WhatsApp</button>
                 <button class="btn-small btn-danger" onclick="Planner.deleteApt(${apt.id})">Löschen</button>
-                <button class="btn-small btn-primary" onclick="Planner.sendWhatsApp(${apt.id})">WhatsApp senden</button>
               </div>
             </div>`
           }).join('');
@@ -320,9 +329,26 @@
         return d.toLocaleDateString('de-DE',{day:'2-digit', month:'2-digit', year:'numeric'});
       },
 
-      toggleDone(id){
+      editApt(id){
         const apt = this.state.apts.find(a=>a.id===id);
-        if(apt){ apt.done=!apt.done; this.save(STORAGE.apts,this.state.apts); this.renderList(); }
+        if(!apt) return;
+        $('#editId').value = apt.id;
+        $('#name').value = apt.name;
+        $('#date').value = apt.date;
+        $('#time').value = apt.time;
+        $('#tripType').value = apt.tripType;
+        $('#mobility').value = apt.mobility;
+        this.onMobilityChange();
+        if(apt.stairs) $('#stairs').value = apt.stairs;
+        if(apt.chairOwner) $('#chairOwner').value = apt.chairOwner;
+        $('#payment').value = apt.payment;
+        this.onPaymentChange();
+        if(apt.tsStatus) $('#tsStatus').value = apt.tsStatus;
+        $('#escort').value = apt.escort;
+        $('#notes').value = apt.notes;
+        $('#startAddr').value = apt.startAddr;
+        $('#zielAddr').value = apt.zielAddr;
+        window.scrollTo({top:0, behavior:'smooth'});
       },
 
       deleteApt(id){
@@ -343,6 +369,7 @@
 
       resetForm(){ 
         $('#aptForm').reset(); 
+        $('#editId').value = '';
         $('#stairsExtra').classList.add('hidden'); 
         $('#tsExtra').classList.add('hidden'); 
       },
@@ -352,40 +379,32 @@
 
       escape(s){ return (s||"").toString().replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m])) },
 
-      // Neues: WhatsApp Nachricht bauen und öffnen
       sendWhatsApp(id){
         const apt = this.state.apts.find(a=>a.id===id);
         if(!apt) return alert('Termin nicht gefunden.');
-        // Headline wie gewünscht
-        const header = 'Neuer Termin für die Übernahme in Dispatch aus der App "Terminannahme"';
+        const header = '*Neuer Termin für die Übernahme in Dispatch aus der App "Terminannahme"*';
         const date = this.formatDate(apt.date) || apt.date || '';
         const time = apt.time || '';
-        // Bau der Zusammenfassung (lesbar, jede Zeile per CRLF)
         const parts = [
           header,
           '',
-          `Name: ${apt.name || ''}`,
-          `Datum: ${date}${time? ' · '+time : ''}`,
-          `Terminart: ${apt.tripType || ''}`,
-          `Beförderung: ${apt.mobility || ''}${apt.stairs? ' (Treppen: '+apt.stairs+')':''}${apt.chairOwner? ' (Rollstuhl: '+apt.chairOwner+')':''}`,
-          `Zahlung: ${apt.payment || ''}${apt.tsStatus? ' (Zuzahlungsstatus: '+apt.tsStatus+')':''}`,
-          `Begleitung: ${apt.escort || ''}`,
-          `Anmerkungen: ${apt.notes || ''}`,
-          `Startadresse: ${apt.startAddr || ''}`,
-          `Zieladresse: ${apt.zielAddr || ''}`,
-          '',
-          '(Diese Nachricht wurde automatisch aus der App "Terminannahme" erzeugt.)'
-        ];
-        const message = parts.join('\n');
-        const url = 'https://wa.me/?text=' + encodeURIComponent(message);
-        // Öffnen in neuem Tab / Fenster
-        window.open(url, '_blank');
+          `*Name:* ${apt.name || ''}`,
+          `*Datum:* ${date}${time? ' · '+time : ''}`,
+          `*Terminart:* ${apt.tripType || ''}`,
+          `*Beförderung:* ${apt.mobility || ''}${apt.stairs? ' (Treppen: '+apt.stairs+')':''}${apt.chairOwner? ' (Rollstuhl: '+apt.chairOwner+')':''}`,
+          `*Zahlung:* ${apt.payment || ''}${apt.tsStatus? ' (Zuzahlungsstatus: '+apt.tsStatus+')':''}`,
+          `*Begleitung:* ${apt.escort || ''}`,
+          apt.notes? `*Anmerkungen:* ${apt.notes}`:'',
+          `*Startadresse:* ${apt.startAddr || ''}`,
+          `*Zieladresse:* ${apt.zielAddr || ''}`
+        ].filter(Boolean);
+        const msg = encodeURIComponent(parts.join("\n"));
+        window.open(`https://wa.me/?text=${msg}`,'_blank');
       }
     };
 
-    window.addEventListener('DOMContentLoaded', ()=> Planner.init());
+    Planner.init();
   </script>
 </body>
 </html>
-
 
