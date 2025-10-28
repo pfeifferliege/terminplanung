@@ -57,6 +57,7 @@
     .btn-primary { background:var(--primary); color:#fff; }
     .btn-primary:hover { background:var(--primary-hover); }
     .btn-ghost { background:#eee; }
+    .btn-ghost:hover { background:#ccc; } /* Hinzugefügt: Hover-Effekt für Share Button */
     .btn-danger { background:var(--danger); color:#fff; }
     .btn-danger:hover { background:var(--danger-hover); }
     .btn-small { font-size:.8rem; padding:.3rem .5rem; }
@@ -76,7 +77,6 @@
     <h1 class="app-title">Terminannahme</h1>
 
     <div class="grid cols-2">
-      <!-- LINKS: Formular -->
       <section class="card" aria-labelledby="form-title">
         <div class="hd" id="form-title">Neuen Termin anlegen</div>
         <div class="bd">
@@ -123,7 +123,6 @@
               </select>
             </div>
 
-            <!-- Nur bei Tragestuhl -->
             <div id="stairsExtra" class="hidden">
               <div>
                 <label for="stairs">Anzahl Treppen</label>
@@ -150,7 +149,6 @@
               </select>
             </div>
 
-            <!-- Nur bei Transportschein -->
             <div id="tsExtra" class="hidden">
               <div>
                 <label for="tsStatus">Zuzahlungsstatus</label>
@@ -162,7 +160,6 @@
               </div>
             </div>
 
-            <!-- Begleitung (immer sichtbar) -->
             <div>
               <label for="escort">Begleitung</label>
               <select id="escort">
@@ -172,13 +169,11 @@
               </select>
             </div>
 
-            <!-- Anmerkungen -->
             <div>
               <label for="notes">Anmerkungen</label>
               <textarea id="notes" rows="3" placeholder="z. B. besondere Hinweise zur Übernahme, Klingel, Mobilnummer, etc."></textarea>
             </div>
 
-            <!-- Startadresse -->
             <div class="hr"></div>
             <div><span class="pill"><span class="dot"></span> Startadresse</span></div>
             <div>
@@ -186,7 +181,6 @@
               <input id="startAddr" type="text" placeholder="Straße Hausnr., PLZ Ort" />
             </div>
 
-            <!-- Zieladresse -->
             <div class="hr"></div>
             <div><span class="pill"><span class="dot"></span> Zieladresse</span></div>
             <div>
@@ -202,7 +196,6 @@
         </div>
       </section>
 
-      <!-- RECHTS: Liste -->
       <section class="card" aria-labelledby="list-title">
         <div class="hd" id="list-title">Terminliste</div>
         <div class="bd">
@@ -259,8 +252,10 @@
         this.upsertName(name);
 
         const editId = $('#editId').value;
+        const newId = editId ? Number(editId) : Date.now(); // NEU: ID bestimmen
+
         const aptData = {
-          id: editId ? Number(editId) : Date.now(),
+          id: newId, // NEU: ID verwenden
           name,
           date: $('#date').value,
           time: $('#time').value,
@@ -288,6 +283,9 @@
         this.save(STORAGE.apts, this.state.apts);
         this.renderList();
         this.resetForm();
+        
+        // NEU: Sofort nach dem Speichern das Teilen-Fenster öffnen
+        this.shareApt(newId);
       },
 
       renderList(){
@@ -313,6 +311,7 @@
               </div>
               <div class="actions">
                 <button class="btn-small btn-primary" onclick="Planner.editApt(${apt.id})">✏️ Bearbeiten</button>
+                <button class="btn-small btn-ghost" onclick="Planner.shareApt(${apt.id})">📤 Teilen</button>
                 <button class="btn-small btn-whatsapp" onclick="Planner.sendWhatsApp(${apt.id})">WhatsApp</button>
                 <button class="btn-small btn-danger" onclick="Planner.deleteApt(${apt.id})">Löschen</button>
               </div>
@@ -326,6 +325,8 @@
         if(!dateStr) return "";
         const d = new Date(dateStr);
         if(isNaN(d)) return this.escape(dateStr);
+        // Datum ist von Date-Picker: d.setHours(d.getHours()+2) um Zeitzonen-Probleme zu vermeiden (für Anzeige)
+        d.setHours(d.getHours()+2);
         return d.toLocaleDateString('de-DE',{day:'2-digit', month:'2-digit', year:'numeric'});
       },
 
@@ -379,26 +380,64 @@
 
       escape(s){ return (s||"").toString().replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m])) },
 
-      sendWhatsApp(id){
-        const apt = this.state.apts.find(a=>a.id===id);
-        if(!apt) return alert('Termin nicht gefunden.');
-        const header = '*Neuer Termin für die Übernahme in Dispatch aus der App "Terminannahme"*';
+      // NEU: Funktion zur Erstellung des Textes für Share/WhatsApp
+      generateShareText(apt, forWhatsApp = false){
+        const star = forWhatsApp ? '*' : '';
+        const header = `${star}Neuer Termin für die Übernahme aus der App "Terminannahme"${star}`;
         const date = this.formatDate(apt.date) || apt.date || '';
         const time = apt.time || '';
         const parts = [
           header,
           '',
-          `*Name:* ${apt.name || ''}`,
-          `*Datum:* ${date}${time? ' · '+time : ''}`,
-          `*Terminart:* ${apt.tripType || ''}`,
-          `*Beförderung:* ${apt.mobility || ''}${apt.stairs? ' (Treppen: '+apt.stairs+')':''}${apt.chairOwner? ' (Rollstuhl: '+apt.chairOwner+')':''}`,
-          `*Zahlung:* ${apt.payment || ''}${apt.tsStatus? ' (Zuzahlungsstatus: '+apt.tsStatus+')':''}`,
-          `*Begleitung:* ${apt.escort || ''}`,
-          apt.notes? `*Anmerkungen:* ${apt.notes}`:'',
-          `*Startadresse:* ${apt.startAddr || ''}`,
-          `*Zieladresse:* ${apt.zielAddr || ''}`
+          `${star}Name:${star} ${apt.name || ''}`,
+          `${star}Datum:${star} ${date}${time? ' · '+time : ''}`,
+          `${star}Terminart:${star} ${apt.tripType || ''}`,
+          `${star}Beförderung:${star} ${apt.mobility || ''}${apt.stairs? ' (Treppen: '+apt.stairs+')':''}${apt.chairOwner? ' (Rollstuhl: '+apt.chairOwner+')':''}`,
+          `${star}Zahlung:${star} ${apt.payment || ''}${apt.tsStatus? ' (Zuzahlungsstatus: '+apt.tsStatus+')':''}`,
+          `${star}Begleitung:${star} ${apt.escort || ''}`,
+          apt.notes? `${star}Anmerkungen:${star} ${apt.notes}`:'',
+          `${star}Startadresse:${star} ${apt.startAddr || ''}`,
+          `${star}Zieladresse:${star} ${apt.zielAddr || ''}`
         ].filter(Boolean);
-        const msg = encodeURIComponent(parts.join("\n"));
+        return parts.join("\n");
+      },
+
+      // NEU: Allgemeine Teilen-Funktion (nutzt Web Share API oder Fallback)
+      async shareApt(id){
+        const apt = this.state.apts.find(a=>a.id===id);
+        if(!apt) return alert('Termin nicht gefunden.');
+        
+        // Text ohne WhatsApp-Formatierung für die native Freigabe
+        const shareText = this.generateShareText(apt, false);
+        
+        // Native Web Share API (bevorzugt)
+        if (navigator.share) {
+          try {
+            await navigator.share({
+              title: 'Neuer Termin',
+              text: shareText
+            });
+            return; // Erfolgreich über native API geteilt
+          } catch (error) {
+            // Fehler oder Abbruch, versuche Fallback (WhatsApp)
+            console.warn('Web Share API nicht erfolgreich, verwende Fallback (WhatsApp).', error);
+          }
+        } 
+        
+        // Fallback: WhatsApp
+        this.sendWhatsApp(id);
+      },
+
+      // Bestehende WhatsApp-Funktion (jetzt als Fallback oder separate Option)
+      sendWhatsApp(id){
+        const apt = this.state.apts.find(a=>a.id===id);
+        if(!apt) return alert('Termin nicht gefunden.');
+        
+        // Text mit WhatsApp-Formatierung 
+        const msgText = this.generateShareText(apt, true); 
+        const msg = encodeURIComponent(msgText);
+        
+        // Öffne WhatsApp-Link
         window.open(`https://wa.me/?text=${msg}`,'_blank');
       }
     };
@@ -407,4 +446,3 @@
   </script>
 </body>
 </html>
-
